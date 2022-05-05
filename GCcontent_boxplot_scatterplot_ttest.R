@@ -7,10 +7,6 @@
 
 library(ggplot2)
 library(dplyr)
-library(forcats)
-library(scales)
-library(reshape2)
-library(stringr)
 
 #Read the csv file, convert GTDB.tk to factor
 data <- read.csv("GC_content.csv")
