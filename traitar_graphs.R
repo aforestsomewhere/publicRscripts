@@ -98,10 +98,10 @@ df3["Total" ,] <- colSums(df3)
 totals <- rbind(df["Total",], df2["Total",], df3["Total",])
 rownames(totals) <- c("Clinical", "Environmental", "Food")
 
-######Vertical heatmap
+######Vertical heatmap, scale within each column to normalise across sources
 
 totals<-t(totals)
 totals<- as.matrix(totals)
-pheatmap(totals)
+pheatmap(totals, scale="column")
 
 ######todo, correct for number of observations
