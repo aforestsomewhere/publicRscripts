@@ -1,0 +1,95 @@
+#20/06/22
+#This script works off the base ComplexHeatmap dataframes generated in my other script (y, p, v), grouping by a grouping variable such as source (or similiar)
+#Each indivdual metadata-containing frame must be ordered before joining into the new frame 'u' to ensure proper order is retained in the final plot
+
+#Reading in a csv file containing the genome names and assigned taxonomy, which are retained in 'tax' and then 't'
+tax <- read.csv("genomes_tax.csv", header=FALSE)
+my_metadata <- cbind(tax$V1, tax$V2)
+rownames(t) <- t[,1]
+rownames(my_metadata) <- my_metadata[,1]
+my_metadata <- my_metadata[,-1]
+t <- as.data.frame(my_metadata)
+
+#Generate the row annotation (taxonomy i.e. Species)
+RowAnn <- data.frame(t$my_metadata)
+colnames(RowAnn) <- c("Species")
+
+#This section reads in the metadata e.g. Source into data frame s
+o <- read.csv("salient_stats.csv", stringsAsFactors = FALSE)
+source <- cbind(o$Genome, o$Source)
+rownames(source) <- source[,1]
+source <- source[,-1]
+s <- as.data.frame(source)
+
+#order both alphabetically by rowname, then merge to new dataframe u. Resolve any NA values.
+t<- t[order(rownames(t)) , ,drop=F]
+s<- s[order(rownames(s)) , ,drop=F]
+u<- cbind(t, s$source)
+colnames(u) <- c('Species', 'Source')
+u[is.na(u)] <- "Unknown"
+
+#Define colour palette
+colours <- list("Species"=c("Species_1"="#D8B70A","Species_2"="#02401B","Species_3"="#C7B19C"),
+                'Source' = c('Source_1' = "#B40F20", 'Source_2' = "#D69C4E", 'Source_3'="#ABDDDE", 'Unknown'='gray'))
+                
+#Generate the column annotation
+colAnno <- HeatmapAnnotation(df = u,
+                             which = 'col',
+                             col = colours,
+                             annotation_width = unit(c(1, 4), 'cm'),
+                             gap = unit(1, 'mm'))
+
+#Generate the row annotation
+speciesAnno <- HeatmapAnnotation(df = u,
+                                 which = 'row',
+                                 col = colours,
+                                 annotation_width = unit(c(1, 4), 'cm'),
+                                 gap = unit(1, 'mm'))
+
+#Generate CARD results from y, split by Source
+card_split <-  Heatmap(y, 
+                            name = "CARD predicted AMR genes", 
+                            col=col_ht2, 
+                            row_names_gp = gpar(fontsize = 7),
+                            column_names_gp = gpar(fontsize=7), 
+                            cluster_rows = FALSE,
+                            cluster_columns = FALSE,
+                            row_dend_reorder = FALSE,
+                            rect_gp = gpar(col = "white", lwd = 2),
+                            column_title = "AMR genes (CARD)",
+                            row_split = u$Source,
+                            border = TRUE)
+     
+#Generate plasmid results from p, split by Source
+plasmid_split <- Heatmap(p, 
+                         name = "Replicons predicted by PlasmidFinder", 
+                         col=col_ht3, 
+                         row_names_gp = gpar(fontsize = 7),
+                         column_names_gp = gpar(fontsize=7), 
+                         cluster_rows = FALSE,
+                         cluster_columns = FALSE,
+                         row_dend_reorder = FALSE,
+                         rect_gp = gpar(col = "white", lwd = 2),
+                         column_title = "Replicons (PlasmidFinder)",
+                         row_split = u$Source,
+                         border = TRUE)
+                              
+#Generate VFDB results from v, split by Source
+#As the final plot it will also generate the right-hand annotation by species (as all were ordered prior to merge into u)
+vf_split <- Heatmap(v, 
+                    name = "Virulence Factors predicted by VFDB", 
+                    col=col_ht7, 
+                    row_names_gp = gpar(fontsize = 6),
+                    column_names_gp = gpar(fontsize=7), 
+                    cluster_rows = FALSE,
+                    cluster_columns = FALSE,
+                    row_dend_reorder = FALSE,
+                    rect_gp = gpar(col = "white", lwd = 2),
+                    column_title = "Virulence Factors (VFDB)",
+                    row_split = u$Source,
+                    border = TRUE,
+                    right_annotation =speciesAnno)
+     
+#Produce the final Complex Heatmap containing the three split plots
+draw(card_split+plasmid_split+vf_split, heatmap_legend_side="left", annotation_legend_side="left",
+          legend_grouping = "original")
